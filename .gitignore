@@ -1,0 +1,24 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+
+# Rocq build artifacts
+*.vo
+*.vok
+*.vos
+*.glob
+
+# C build artifacts
+undecidable
+
+# PDF (generated, not tracked)
+rice.pdf
+
+# Docker outputs
+out/
