@@ -222,7 +222,7 @@ principled response to a provable ceiling.
              via {H}ilbert's Tenth Problem},
   journal = {Logical Methods in Computer Science},
   year    = {2026},
-  note    = {Submitted. Preprint: arXiv:XXXX.XXXXX}
+  note    = {Submitted. Preprint: arXiv:2604.16477}
 }
 ```
 
