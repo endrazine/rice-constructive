@@ -27,7 +27,7 @@ The proof is mechanically verified by Rocq (Coq). The single axiom used is
 | `rice.tex` | LaTeX source (LMCS format, requires `lmcs.cls`) |
 | `rice.bib` | BibTeX bibliography (15 entries, DOIs included) |
 | `rice.v` | Rocq proof source — compile with `coqc rice.v` |
-| `lmcs.cls` | LMCS style file (see note below) |
+| `lmcs.cls` | LMCS style file |
 | `alphaurl.bst` | BibTeX style for LMCS format |
 | `undecidable.c` | Concrete C witness to Rice's theorem |
 | `Makefile` | Build system |
@@ -66,11 +66,6 @@ out/rice.vo         — compiled Rocq object (proof accepted)
 out/undecidable     — C binary: concrete undecidable analysis target
 ```
 
-Note: `lmcs.cls` is downloaded from `lmcs.episciences.org` at build time.
-Docker build requires internet access. For offline builds, place `lmcs.cls`
-in the build context and replace the `wget` line in the Dockerfile with
-`COPY lmcs.cls ./`.
-
 ### Without Docker (Ubuntu/Debian)
 
 **Install dependencies:**
@@ -80,17 +75,11 @@ sudo apt install coq texlive-latex-extra texlive-bibtex-extra \
                  texlive-fonts-recommended texlive-science libgmp-dev
 ```
 
-**Download the LMCS style file** (required for `rice.pdf`):
-
-```bash
-wget https://lmcs.episciences.org/public/lmcs.cls
-```
-
 **Build:**
 
 ```bash
 make all        # PDF + Rocq proof + C binary
-make pdf        # rice.pdf only (requires lmcs.cls)
+make pdf        # rice.pdf only
 make rocq       # verify Rocq proof only
 make c          # build undecidable only
 make run        # build and run both modes of undecidable.c
@@ -131,21 +120,11 @@ The proof uses only these tactics: `intros`, `induction`, `destruct`,
 - `texlive-bibtex-extra` (for `alphaurl.bst`, required by LMCS format)
 - `texlive-fonts-recommended`
 
-### LMCS Style File
-
-`lmcs.cls` is not bundled in this repository as it is maintained separately
-by the LMCS layout editors. Download the latest version before building
-`rice.pdf`:
-
-```bash
-wget https://lmcs.episciences.org/public/lmcs.cls
-```
-
 ## Makefile Targets
 
 ```
 make all          build PDF + verify Rocq proofs + build C binary (default)
-make pdf          build rice.pdf (requires lmcs.cls)
+make pdf          build rice.pdf
 make rocq         verify Rocq proofs
 make c            build undecidable C binary
 make run          build and run both modes of undecidable.c
