@@ -1,5 +1,5 @@
 (** * A Constructive Proof of Rice's Theorem via Hilbert's Tenth Problem
-    Author: Jonathan Brossard <brossardj@acm.org>
+    Author: Jonathan Brossard <jonathan.brossard@moabi.com>
 
     This file contains the complete Rocq (Coq) formalization accompanying
     the paper of the same title.

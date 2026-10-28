@@ -41,7 +41,7 @@
 
 \author{Jonathan Brossard\lmcsorcid{0009-0004-8031-1438}}
 %\address{France}
-\email{brossardj@acm.org}
+\email{jonathan.brossard@moabi.com}
 
 \keywords{Rice's theorem, halting problem, constructive logic, intuitionistic logic,
   MRDP theorem, Hilbert's tenth problem, Rocq, step-indexed semantics,
@@ -976,46 +976,44 @@ The constructiveness of the proof has a practical consequence. The
 $S_D^b$ witness programs are not abstract objects --- they can be written
 down. The file \texttt{undecidable.c}, available at
 \url{https://github.com/endrazine/rice-constructive},
-is a single C program with two modes. The first mode searches for solutions to
-$x^2 - y^2 - z^2 = 1$ (solvable; terminates provably). The second mode
-searches sequentially, for $k = 0, 1, 2, \ldots$ up to $2^{64}-1$
-(stored as \texttt{uint64\_t}, platform-independent; see
-Remark~\ref{rem:correspondence} for the rationale) (skipping $k \equiv 4$
-or $5 \pmod{9}$, which are provably impossible), for integer solutions to
-$x^3 + y^3 + z^3 = k$, advancing to $k+1$ as soon as a solution for the
-current $k$ is found. This program terminates if and only if every integer
-not congruent to $4$ or $5$ modulo $9$ is a sum of three integer cubes ---
-an open conjecture in number theory as of 2026. Unlike a search for a
-single fixed target, this formulation is permanently open: resolving any
-individual $k$ merely advances the search, and the termination question
-is equivalent to the full conjecture.
-In both cases, Theorem~\ref{thm:rice} implies that no static analyzer
-can correctly decide termination across the full family of such programs:
+is a single C program that takes an arbitrary Diophantine polynomial
+$D$ with integer coefficients in variables $x_1, \ldots, x_k$ as its
+sole command-line argument, and searches $\mathbb{N}^k$ for a tuple
+with $D = 0$. It halts, printing the witness, if and only if $D$ has a
+solution in the naturals; it runs forever otherwise. This is the
+executable image of $S_D^b$ instantiated at $b = 1$ and
+$e_1 = \mathtt{halt}$: the program's behavior on a given polynomial is
+equivalent to the solvability of that polynomial, which is undecidable
+by MRDP. All arithmetic is exact (GMP \texttt{mpz\_t}): the unbounded
+search counter is a correctness requirement --- a fixed-width counter
+would make the search finite and invalidate the formal claim.
+For example:
+\begin{verbatim}
+  ./undecidable "x1^2 - x2^2 - x3^2 - 1"   # halts at (1,0,0)
+  ./undecidable "x1^2 + 1"                  # no solution: runs forever
+\end{verbatim}
+\noindent Theorem~\ref{thm:rice} implies that no static analyzer
+can correctly decide termination across the full family of inputs:
 any analyzer that could would decide arbitrary Diophantine solvability,
 which is impossible by MRDP.
 
 \begin{rem}[Correspondence to $S_D^b$]
 \label{rem:correspondence}
 The structure of \texttt{undecidable.c} mirrors $S_D^b$ directly.
-Both programs share a generic search engine \texttt{find\_sol\_one()}
-that enumerates tuples $\vec{x} \in \mathbb{N}^k$ via Cantor decoding
-(steps 1--2 of Definition~\ref{def:witness}), evaluates the polynomial
-check \texttt{D(x)==0}, and on success calls the target behavior
-(step~3). The \texttt{decidable} program is a ground instance with
-$b=1$, $e_1 = \mathtt{halt}$, and the polynomial
-$D(x,y,z) = x^2-y^2-z^2-1$ from Example~\ref{ex:concrete}.
-The \texttt{undecidable} program composes \texttt{find\_sol\_one()}
-instances sequentially over $k = 0,1,2,\ldots$, yielding a program
-whose termination is equivalent to a conjecture in number theory rather
-than to any single Diophantine instance; resolving any individual $k$
-merely advances the search. The outer loop counter \texttt{k} is a
-\texttt{uint64\_t} (platform-independent, max $2^{64}-1$); this is
-intentional --- the program stalls at the first open value of the
-conjecture and never approaches $2^{64}-1$ in practice, so overflow
-is purely hypothetical.
-The inner tuple counter \texttt{n} inside \texttt{find\_sol\_one()} uses
-GMP \texttt{mpz\_t} as a correctness requirement: a fixed-width counter
-would exhaust in finite time and invalidate the formal claim.
+The program takes a polynomial $D(x_1, \ldots, x_k)$ as input and
+enumerates all tuples $\vec{x} \in \mathbb{N}^k$ via Cantor decoding
+(steps 1--2 of Definition~\ref{def:witness}), evaluates $D(\vec{x}) = 0$,
+and halts only when a witness is found (step~3).
+The search counter $n$ uses GMP \texttt{mpz\_t} (unbounded) as a
+correctness requirement: a fixed-width counter would exhaust its range
+in finite time, making the search trivially terminating and invalidating
+the formal claim. Before printing, the witness is re-verified by an
+independent evaluation of $D$ --- there is exactly one success path in
+the program, and it holds a genuine solution.
+The input polynomial is parsed from a command-line string and echoed
+back for inspection; the parser is explicitly marked as untrusted and
+is not part of the mathematical reduction, which begins from the
+internal polynomial representation consumed by the search core.
 \texttt{undecidable.c} is a hand-written illustration, not a formally
 extracted program. Formal extraction from the Rocq development
 (e.g., via \texttt{Extraction} to OCaml, then compilation) is feasible
@@ -1102,7 +1100,7 @@ Print Assumptions Halting_Problem. (* Closed under the global context *)
 
 \begin{lstlisting}[language=Haskell, caption=Complete Rocq Formalization, label=lst:rocq, basicstyle=\ttfamily\tiny]
 (** * A Constructive Proof of Rice's Theorem via Hilbert's Tenth Problem
-    Author: Jonathan Brossard <brossardj@acm.org>
+    Author: Jonathan Brossard <jonathan.brossard@moabi.com>
 
     This file contains the complete Rocq (Coq) formalization accompanying
     the paper of the same title.

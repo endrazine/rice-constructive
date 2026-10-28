@@ -1,6 +1,6 @@
 # A Constructive Proof of Rice's Theorem via Hilbert's Tenth Problem
 
-**Author:** Jonathan Brossard (`brossardj@acm.org`)  
+**Author:** Jonathan Brossard (`jonathan.brossard@moabi.com`)  
 **ORCID:** [0009-0004-8031-1438](https://orcid.org/0009-0004-8031-1438)
 
 This repository contains the full source for the paper *"A Constructive Proof
@@ -82,7 +82,7 @@ make all        # PDF + Rocq proof + C binary
 make pdf        # rice.pdf only
 make rocq       # verify Rocq proof only
 make c          # build undecidable only
-make run        # build and run both modes of undecidable.c
+make run        # build and run undecidable.c with example polynomials
 ```
 
 ## Dependencies
@@ -102,15 +102,13 @@ The proof uses only these tactics: `intros`, `induction`, `destruct`,
 
 - **Required for** `undecidable.c` — provides unbounded integer arithmetic
 - **Install:** `sudo apt install libgmp-dev`
-- **Why required:** The Rocq proof reasons over infinite `nat`. The inner
-  tuple counter `n` inside `find_sol_one()` uses GMP `mpz_t` as a
-  correctness requirement: a fixed-width counter would exhaust its range in
-  finite time, making the inner search trivially terminating and invalidating
-  the formal claim. The outer target counter `k` uses `uint64_t` (max
-  2⁶⁴−1); this is sufficient in practice because the program stalls at the
-  first open value of the sum-of-three-cubes conjecture and never approaches
-  2⁶⁴−1. See the comment in `undecidable.c` and Remark 9.1 in the paper
-  for the full rationale.
+- **Why required:** The Rocq proof reasons over infinite `nat`. The search
+  counter `n` in `run_search()` uses GMP `mpz_t` as a correctness
+  requirement: a fixed-width counter would exhaust its range in finite time,
+  making the search trivially terminating and invalidating the formal claim.
+  The polynomial evaluation also uses `mpz_t` to handle arbitrary integer
+  coefficients and exponents without overflow. See the comment in
+  `undecidable.c` and Remark 9.1 in the paper for the full rationale.
 
 ### LaTeX
 
@@ -127,7 +125,7 @@ make all          build PDF + verify Rocq proofs + build C binary (default)
 make pdf          build rice.pdf
 make rocq         verify Rocq proofs
 make c            build undecidable C binary
-make run          build and run both modes of undecidable.c
+make run          build and run undecidable.c with example polynomials
 make check        alias for rocq
 make install      install all dependencies via apt
 make axioms       print axioms used by the proof
@@ -219,39 +217,41 @@ retain their respective licenses.
 ## A Concrete Undecidable Analysis Target
 
 The file `undecidable.c` is a **single C program whose termination is
-provably undecidable by static analysis**. It is a direct C translation
-of the `find_sol` function from `rice.v`, and its undecidability is a
-consequence of `Theorem Rice_Theorem`.
+provably undecidable by static analysis**. It takes an arbitrary
+Diophantine polynomial as its sole argument and searches for a root in
+the naturals — a direct executable image of the `S_D` family from
+`rice.v`. Its undecidability is a consequence of `Theorem Rice_Theorem`.
 
 ### Build and run
 
 ```bash
-gcc -O2 undecidable.c -o undecidable -lgmp
+gcc -O2 -std=c17 undecidable.c -o undecidable -lgmp -lm
 
-./undecidable decidable     # terminates immediately (equation is solvable)
-./undecidable undecidable   # stalls at the first open case of an open conjecture
+# Solvable polynomial — terminates immediately
+./undecidable "x1^2 - x2^2 - x3^2 - 1"
+
+# No solution in N — runs forever
+./undecidable "x1^2 + 1"
 ```
 
-### What the two modes do
+### How it works
 
-Both modes implement the same algorithm — the `find_sol` construction from
-`rice.v` — differing only in which Diophantine equation they search:
+The program parses a polynomial `D(x1, ..., xk)` from its command-line
+argument and searches `N^k` for a tuple with `D = 0`. It enumerates all
+tuples via iterated Cantor unpairing of a single unbounded counter `n`,
+evaluates `D` at each tuple using GMP exact arithmetic, and halts with a
+witness if and only if one is found. The search counter `n` uses GMP
+`mpz_t` as a correctness requirement: a fixed-width counter would make
+the search finite and invalidate the formal claim.
 
-**Mode 1 (`decidable`)** searches for integer solutions to `x² - y² - z² = 1`.
-This is solvable (solution: x=1, y=0, z=0), so the program terminates
-immediately. A correct static analyzer must say "terminates."
+Before printing, the witness is re-verified by an independent evaluation
+of `D` — there is exactly one success path in the program, and it holds a
+genuine solution.
 
-**Mode 2 (`undecidable`)** searches sequentially, for k = 0, 1, 2, … up to
-2⁶⁴−1 (skipping k ≡ 4 or 5 mod 9, which are provably impossible as sums of
-three cubes), for integer solutions to `x³ + y³ + z³ = k`. It advances to
-k+1 as soon as a solution for the current k is found. This program
-terminates if and only if every eligible integer is a sum of three integer
-cubes — an open conjecture in number theory as of 2026. Unlike a search for
-a single fixed target, this formulation is robust: resolving any individual
-k merely advances the search, and the termination question is equivalent to
-the full conjecture. The outer target counter `k` uses `uint64_t` (see the
-code comment and Remark 9.1 in the paper for the rationale); the inner tuple
-counter `n` uses GMP `mpz_t` as a correctness requirement.
+The input parser accepts polynomials in the form
+`c * x1^e1 * x2^e2 ... + ...` with integer coefficients. It is explicitly
+marked as untrusted in the source; the mathematical reduction begins from
+the internal polynomial representation consumed by the search core.
 
 ### The formal claim
 
@@ -261,8 +261,8 @@ Theorem Rice_Theorem (in rice.v):
   form, whether they terminate.
 ```
 
-More precisely: termination of `find_sol(D)` is equivalent to solvability
-of D. Since solvability of arbitrary Diophantine equations is undecidable
+More precisely: termination of `undecidable(D)` is equivalent to solvability
+of `D`. Since solvability of arbitrary Diophantine equations is undecidable
 (MRDP theorem, mechanized in Rocq at
 https://github.com/uds-psl/coq-library-undecidability), termination of
 the program family is undecidable.
@@ -275,7 +275,7 @@ either:
 
 ### Connection to the Rocq proof
 
-The C function `find_sol_one()` in `undecidable.c` mirrors the Rocq definition:
+The C function `run_search()` in `undecidable.c` mirrors the Rocq definition:
 
 ```rocq
 Fixpoint find_sol (ar : nat) (p : Poly) (fuel : nat) : option nat
@@ -283,9 +283,11 @@ Fixpoint find_sol (ar : nat) (p : Poly) (fuel : nat) : option nat
 
 The Rocq proof constructs two programs `S_D^0` and `S_D^1` that call
 `find_sol` and behave differently depending on whether `D` is solvable.
-The C program is a concrete witness to this construction. Any static
-analyzer deciding the semantic property "terminates" for this family would,
-by the proof's construction, decide Diophantine solvability — contradicting
+The C program is a concrete witness to this construction: it takes an
+arbitrary polynomial `D` and its behavior (halt vs. diverge) is determined
+entirely by the solvability of `D`. Any static analyzer deciding the
+semantic property "terminates" for this family would, by the proof's
+construction, decide Diophantine solvability — contradicting
 `H10C_SAT_undec`.
 
 ### Why this matters for cybersecurity

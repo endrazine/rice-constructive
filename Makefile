@@ -14,13 +14,13 @@
 #   pdf               — build rice.pdf
 #   rocq              — verify Rocq proofs with coqc
 #   c                 — build undecidable (the concrete C witness)
-#   run               — build and run undecidable (both programs)
+#   run               — build and run undecidable with example polynomials
 #   check             — alias for rocq
 #   install           — install all dependencies via apt
 #   docker            — build Docker image (reproducible environment)
 #   docker-run        — build image and extract outputs to ./out/
 #   docker-rocq       — run Rocq proof verification inside the container
-#   docker-undecidable      — run x^3+y^3+z^3=114 search in background
+#   docker-undecidable      — run undecidable search in background
 #   docker-undecidable-log  — follow live output from the search
 #   docker-undecidable-stop — stop and remove the search container
 #   docker-clean      — remove Docker image and ./out/
@@ -42,7 +42,7 @@ LATEX        = pdflatex
 BIBTEX       = bibtex
 LATEXFLAGS   = -interaction=nonstopmode -halt-on-error
 CC           = gcc
-CFLAGS       = -O2 -Wall -Wextra -Wno-unused-function -std=c11
+CFLAGS       = -O2 -Wall -Wextra -Wno-unused-function -std=c17
 LDFLAGS      = -lgmp -lm
 COQCFLAGS    =
 
@@ -103,10 +103,10 @@ docker-clean:
 docker-undecidable: docker
 	@echo ""
 	@echo "Starting undecidable search in background container..."
-	@echo "Equation: x^3 + y^3 + z^3 = 114 (open problem)"
+	@echo "Polynomial: x1^2 + 1 (no solution in N — runs forever)"
 	@echo ""
 	docker run -d --name rice-undecidable rice-constructive \
-	    sh -c './undecidable undecidable 2>&1 | tee /undecidable.log'
+	    sh -c './undecidable "x1^2 + 1" 2>&1 | tee /undecidable.log'
 	@echo "Container started: rice-undecidable"
 	@echo ""
 	@echo "Useful commands:"
@@ -194,17 +194,17 @@ $(C_BIN): $(C_SRC)
 	@echo ""
 	@echo "======================================================="
 	@echo "  Built: $(C_BIN)"
-	@echo "  Run: ./$(C_BIN) decidable    (terminates: x^2-y^2-z^2=1)"
-	@echo "  Run: ./$(C_BIN) undecidable  (open problem: x^3+y^3+z^3=114)"
+	@echo "  Run: ./$(C_BIN) \"x1^2 - x2^2 - x3^2 - 1\"  (terminates)"
+	@echo "  Run: ./$(C_BIN) \"x1^2 + 1\"                (runs forever)"
 	@echo "======================================================="
 
 run: $(C_BIN)
-	@echo "=== decidable: x^2 - y^2 - z^2 = 1 (known solvable) ==="
-	./$(C_BIN) decidable
+	@echo "=== solvable: x1^2 - x2^2 - x3^2 - 1 (known solvable) ==="
+	./$(C_BIN) "x1^2 - x2^2 - x3^2 - 1"
 	@echo ""
-	@echo "=== undecidable: x^3 + y^3 + z^3 = 114 (open problem) ==="
-	@echo "    (Ctrl-C to stop — may never terminate)"
-	./$(C_BIN) undecidable
+	@echo "=== unsolvable: x1^2 + 1 (no solution in N) ==="
+	@echo "    (Ctrl-C to stop — runs forever)"
+	./$(C_BIN) "x1^2 + 1"
 
 # --- Install -----------------------------------------------------------------
 
@@ -271,14 +271,14 @@ help:
 	@echo "  pdf         build rice.pdf"
 	@echo "  rocq        verify Rocq proofs"
 	@echo "  c           build undecidable (concrete C witness)"
-	@echo "  run         build and run both programs in undecidable.c"
+	@echo "  run         build and run undecidable.c with example polynomials"
 	@echo "  check       alias for rocq"
 	@echo "  install     install dependencies via apt"
 	@echo "  axioms      print axioms used by the proof"
 	@echo "  docker      build Docker image (fully reproducible)"
 	@echo "  docker-run  build image and copy outputs to ./out/"
 	@echo "  docker-rocq  run Rocq proof verification inside Docker"
-	@echo "  docker-undecidable      run x^3+y^3+z^3=114 search in background"
+	@echo "  docker-undecidable      run undecidable polynomial search in background"
 	@echo "  docker-undecidable-log  follow live output from the search"
 	@echo "  docker-undecidable-stop stop and remove the search container"
 	@echo "  docker-clean remove Docker image and ./out/"

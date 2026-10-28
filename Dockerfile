@@ -23,7 +23,7 @@
 
 FROM ubuntu:24.04
 
-LABEL maintainer="Jonathan Brossard <brossardj@acm.org>"
+LABEL maintainer="Jonathan Brossard <endrazine@securityfocus.com>"
 LABEL description="Reproducible build: A Constructive Proof of Rice's Theorem"
 LABEL org.opencontainers.image.source="https://github.com/endrazine/rice-constructive"
 
@@ -134,14 +134,13 @@ RUN if [ ! -f lmcs.cls.missing ]; then \
 # ---------------------------------------------------------------------------
 # Build C witness program
 # ---------------------------------------------------------------------------
-RUN gcc -O2 -Wall -Wextra -Wno-unused-function -std=c11 \
-        undecidable.c -o undecidable -lgmp && \
+RUN gcc -O2 -Wall -Wextra -Wno-unused-function -std=c17 \
+        undecidable.c -o undecidable -lgmp -lm && \
     echo "" && \
     echo "=======================================================" && \
     echo "  C: undecidable built." && \
-    echo "  ./undecidable decidable    — terminates (x^2-y^2-z^2=1)" && \
-    echo "  ./undecidable undecidable  — open conjecture (x^3+y^3+z^3=k," && \
-    echo "                               k=0,1,2,..., skipping k≡4,5 mod 9)" && \
+    echo "  ./undecidable \"x1^2 - x2^2 - x3^2 - 1\"  (terminates)" && \
+    echo "  ./undecidable \"x1^2 + 1\"                (runs forever)" && \
     echo "=======================================================" && \
     echo ""
 
